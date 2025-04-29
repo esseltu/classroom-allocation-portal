@@ -1,18 +1,26 @@
 // user-display.js
 document.addEventListener('DOMContentLoaded', function() {
-    // Check if user is logged in
-    const auth = JSON.parse(localStorage.getItem('auth'));
-    if (!auth || !auth.isLoggedIn) {
+    const auth = JSON.parse(localStorage.getItem('auth')) || {};
+    
+    if (!auth.isLoggedIn) {
         window.location.href = 'Login.html';
         return;
     }
 
-    // Load user details
-    const userDetails = JSON.parse(localStorage.getItem('userDetails'));
-    if (userDetails && document.querySelector('.user-details h3')) {
-        // Display user info
-        document.querySelector('.user-details h3').textContent = userDetails.fullName;
-        document.querySelector('.user-details p:nth-of-type(1)').textContent = 
-            `${userDetails.role} • ${userDetails.department} • Level ${userDetails.level}`;
-    }
+    const userDetails = JSON.parse(localStorage.getItem('userDetails')) || {};
+    updateUserDisplay(userDetails);
 });
+
+function updateUserDisplay(details) {
+    const nameEl = document.getElementById('userFullName');
+    const roleEl = document.getElementById('userRoleInfo');
+    
+    if (nameEl) nameEl.textContent = details.fullName || 'User';
+    if (roleEl) {
+        roleEl.textContent = [
+            details.role,
+            details.department,
+            details.level && `Level ${details.level}`
+        ].filter(Boolean).join(' • ');
+    }
+}
