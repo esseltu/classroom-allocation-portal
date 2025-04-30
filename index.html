@@ -82,12 +82,22 @@
     <script src="booking-system.js"></script>
     <script src="cu.js"></script>
     <script>
+        // Initialize bookings properly
+        if (!localStorage.getItem('bookings')) {
+            localStorage.setItem('bookings', JSON.stringify({
+                upcoming: [],
+                current: [],
+                past: []
+            }));
+        }
+        
         // Display user's bookings
         function displayUserBookings() {
             const auth = JSON.parse(localStorage.getItem('auth')) || {};
             const bookings = JSON.parse(localStorage.getItem('bookings')) || { 
                 upcoming: [], 
-                current: [] 
+                current: [],
+                past: []
             };
             
             // Filter bookings for current user
@@ -98,7 +108,6 @@
             const container = document.getElementById('userBookings');
             const nextBookingEl = document.getElementById('nextBooking');
             
-            // Clear previous content
             container.innerHTML = '';
             
             if (userBookings.length === 0) {
@@ -116,40 +125,89 @@
                 const card = document.createElement('div');
                 card.className = 'room-card';
                 card.innerHTML = `
-                    <div class="room-icon">🏛️</div>
+                    <div class="room-icon">🏫</div>
                     <h3>${booking.roomId}</h3>
                     <p>Date: ${booking.date}</p>
                     <p>Time: ${booking.startTime} - ${booking.endTime}</p>
                     <p>Purpose: ${booking.purpose || 'Not specified'}</p>
-                    <button class="btn btn-cancel" 
-                            onclick="cancelBooking(${booking.timestamp})">
+                    <button class="btn btn-cancel" data-timestamp="${booking.timestamp}">
                         Cancel Booking
                     </button>
                 `;
                 container.appendChild(card);
             });
+        
+            // Add event listeners to all cancel buttons
+            document.querySelectorAll('.btn-cancel').forEach(button => {
+                button.addEventListener('click', () => {
+                    cancelBooking(parseInt(button.dataset.timestamp));
+                });
+            });
         }
         
-        // Cancel booking function (add to global scope)
+        // Cancel booking function
         function cancelBooking(timestamp) {
+            if (!confirm('Are you sure you want to cancel this booking?')) return;
+            
             const bookings = JSON.parse(localStorage.getItem('bookings'));
             bookings.upcoming = bookings.upcoming.filter(b => b.timestamp !== timestamp);
             bookings.current = bookings.current.filter(b => b.timestamp !== timestamp);
             localStorage.setItem('bookings', JSON.stringify(bookings));
             
-            // Refresh display
             displayUserBookings();
             window.dispatchEvent(new StorageEvent('storage', { key: 'bookings' }));
         }
         
-        // Initialize on page load + sync across tabs
-        document.addEventListener('DOMContentLoaded', displayUserBookings);
+        // Auto-update every minute
+        function checkBookingStatus() {
+            const now = new Date();
+            const bookings = JSON.parse(localStorage.getItem('bookings'));
+            let needsUpdate = false;
+            
+            // Check upcoming -> current
+            bookings.upcoming = bookings.upcoming.filter(booking => {
+                const start = new Date(`${booking.date}T${booking.startTime}`);
+                if (now >= start) {
+                    booking.status = 'current';
+                    bookings.current.push(booking);
+                    needsUpdate = true;
+                    return false;
+                }
+                return true;
+            });
+            
+            // Check current -> past
+            bookings.current = bookings.current.filter(booking => {
+                const end = new Date(`${booking.date}T${booking.endTime}`);
+                if (now >= end) {
+                    booking.status = 'past';
+                    bookings.past.push(booking);
+                    needsUpdate = true;
+                    return false;
+                }
+                return true;
+            });
+            
+            if (needsUpdate) {
+                localStorage.setItem('bookings', JSON.stringify(bookings));
+                displayUserBookings();
+                // If you have a displayRooms() function elsewhere, call it here too
+                if (typeof displayRooms === 'function') displayRooms();
+            }
+        }
+        
+        // Initialize
+        document.addEventListener('DOMContentLoaded', () => {
+            displayUserBookings();
+            // Run immediately, then every minute
+            checkBookingStatus();
+            setInterval(checkBookingStatus, 60000);
+        });
+        
+        // Sync across tabs
         window.addEventListener('storage', (e) => {
             if (e.key === 'bookings') displayUserBookings();
         });
-        
-        // Make cancelBooking available globally
-        window.cancelBooking = cancelBooking;
         </script>
 </body>
 </html>
