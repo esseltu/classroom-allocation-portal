@@ -76,16 +76,6 @@
 
     <script src="cu.js"></script>
 
-
-    <!-- Cross-tab synchronization -->
-    <script>
-    window.addEventListener('storage', function(e) {
-        if (e.key === 'bookings') {
-            displayRooms();
-        }
-    });
-    </script>
-
     <script>
     document.addEventListener('DOMContentLoaded', function() {
         // Check authentication
@@ -151,7 +141,8 @@
                     bookedRooms[booking.roomId] = {
                         endTime: booking.endTime,
                         bookedBy: booking.bookedBy,
-                        timestamp: booking.timestamp
+                        timestamp: booking.timestamp,
+                        date: booking.date
                     };
                 }
             });
@@ -168,7 +159,7 @@
                     <h3>${room.id}</h3>
                     <p>${room.block} • Capacity: ${room.capacity}</p>
                     <span class="room-status ${isBooked ? 'booked' : 'available'}">
-                        ${isBooked ? `Booked until ${bookedRooms[room.id].endTime}` : 'Available'}
+                        ${isBooked ? `Booked by ${bookedRooms[room.id].bookedBy} until ${bookedRooms[room.id].endTime} (${bookedRooms[room.id].date})` : 'Available'}
                     </span>
                     <button class="btn ${isBooked ? (isMyBooking ? 'btn-cancel' : 'btn-disabled') : 'btn-book'}" 
                             ${isBooked && !isMyBooking ? 'disabled' : ''}
@@ -190,6 +181,39 @@
             });
         }
 
+        // Open booking modal with time constraints
+        function openBookingModal(roomId) {
+            const bookings = JSON.parse(localStorage.getItem('bookings'));
+            const roomBookings = [...bookings.upcoming, ...bookings.current]
+                .filter(b => b.roomId === roomId);
+            
+            modalRoomId.textContent = roomId;
+            const today = new Date().toISOString().split('T')[0];
+            document.getElementById('booking-date').value = today;
+            document.getElementById('booking-date').min = today;
+            
+            // If room has existing bookings, set min time to the latest booking's end time
+            if (roomBookings.length > 0) {
+                const latestBooking = roomBookings.reduce((latest, current) => {
+                    return new Date(`${current.date}T${current.endTime}`) > 
+                           new Date(`${latest.date}T${latest.endTime}`) ? current : latest;
+                });
+                
+                const endTime = latestBooking.endTime;
+                document.getElementById('start-time').min = endTime;
+                document.getElementById('start-time').placeholder = `Must be after ${endTime}`;
+            } else {
+                // Set default times (current hour to next hour)
+                const now = new Date();
+                document.getElementById('start-time').value = 
+                    `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`;
+                document.getElementById('end-time').value = 
+                    `${(now.getHours() + 1).toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`;
+            }
+            
+            bookingModal.classList.add('active');
+        }
+
         // Cancel booking
         function cancelBooking(bookingId, roomId) {
             if (!confirm(`Cancel booking for ${roomId}?`)) return;
@@ -205,29 +229,12 @@
             displayRooms();
         }
 
-        // Open booking modal
-        function openBookingModal(roomId) {
-            modalRoomId.textContent = roomId;
-            const today = new Date().toISOString().split('T')[0];
-            document.getElementById('booking-date').value = today;
-            document.getElementById('booking-date').min = today;
-            
-            // Set default times (current hour to next hour)
-            const now = new Date();
-            document.getElementById('start-time').value = 
-                `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`;
-            document.getElementById('end-time').value = 
-                `${(now.getHours() + 1).toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`;
-            
-            bookingModal.classList.add('active');
-        }
-
         // Close modal
         function closeModal() {
             bookingModal.classList.remove('active');
         }
 
-        // Handle booking form
+        // Handle booking form with overlap checking
         bookingForm.addEventListener('submit', function(e) {
             e.preventDefault();
             
@@ -237,11 +244,33 @@
             const endTime = document.getElementById('end-time').value;
             const purpose = document.getElementById('purpose').value;
             
+            // Validate times
             if (startTime >= endTime) {
                 alert('End time must be after start time');
                 return;
             }
             
+            // Check for overlapping bookings
+            const bookings = JSON.parse(localStorage.getItem('bookings'));
+            const roomBookings = [...bookings.upcoming, ...bookings.current]
+                .filter(b => b.roomId === roomId);
+            
+            const newStart = new Date(`${date}T${startTime}`);
+            const newEnd = new Date(`${date}T${endTime}`);
+            
+            const isOverlapping = roomBookings.some(booking => {
+                const existingStart = new Date(`${booking.date}T${booking.startTime}`);
+                const existingEnd = new Date(`${booking.date}T${booking.endTime}`);
+                
+                return newStart < existingEnd && newEnd > existingStart;
+            });
+            
+            if (isOverlapping) {
+                alert('This room is already booked during that time. Please choose another time.');
+                return;
+            }
+            
+            // Create and save booking
             const booking = {
                 roomId,
                 date,
@@ -253,7 +282,6 @@
                 status: 'upcoming'
             };
             
-            const bookings = JSON.parse(localStorage.getItem('bookings'));
             bookings.upcoming.push(booking);
             localStorage.setItem('bookings', JSON.stringify(bookings));
             
@@ -325,6 +353,13 @@
                 displayRooms();
             }
         }, 60000);
+
+        // Cross-tab synchronization
+        window.addEventListener('storage', function(e) {
+            if (e.key === 'bookings') {
+                displayRooms();
+            }
+        });
     });
     </script>
 </body>
