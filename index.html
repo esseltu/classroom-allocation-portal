@@ -5,18 +5,17 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Classroom Allocation Portal</title>
     <link rel="stylesheet" href="cu.css">
+    <link rel="stylesheet" href="multi-user-styles.css">
 </head>
 <body>
-    <!-- Full-width header container -->
+    <!-- Header -->
     <div class="header-container">
         <header class="header">
             <div class="logo">
                 <img src="cu logo.png" alt="Logo">
                 <span class="logo-text">Classroom Allocation Portal</span>
             </div>
-            
-            <button class="mobile-menu-toggle" aria-label="Toggle navigation menu" aria-expanded="false">☰</button>
-            
+            <button class="mobile-menu-toggle">☰</button>
             <div class="nav-links">
                 <a href="#" class="active">Dashboard</a>
                 <a href="booking.html">Bookings</a>
@@ -25,7 +24,7 @@
         </header>
     </div>
 
-    <!-- Full-width hero container -->
+    <!-- Hero Section -->
     <div class="hero-container">
         <section class="hero">
             <h1>Welcome to CU Classroom Allocation Portal</h1>
@@ -33,9 +32,9 @@
         </section>
     </div>
 
-    <!-- Main content container -->        
+    <!-- Main Content -->
     <div class="container">
-        <!-- User info -->
+        <!-- User Info -->
         <div class="user-info">
             <div class="user-avatar"><span>📚</span></div>
             <div class="user-details">
@@ -45,52 +44,172 @@
             </div>
         </div>
         
-        <!-- New booking section -->
+        <!-- New Booking -->
         <div class="new-booking">
             <div class="booking-icon">📅</div>
             <div class="booking-form">
                 <h2>Book a Lecture Hall</h2>
                 <p>Fill in the details to book a lecture room</p>
-                <!-- Booking actions -->
                 <div class="booking-actions">
                     <button class="btn" onclick="window.location.href='booking.html'">Book Room</button>
                 </div>
             </div>
         </div>
-        <!--
-        -->
-       <!-- Add this in your index.html file -->
 
-       <!--
-<section class="manage-bookings">
-    <h2 class="section-title">Manage Bookings</h2>
-    <p class="section-subtitle">View and make changes to active bookings</p>
-    -->
-    
-    <div class="room-cards">
-      <!-- Booking cards will be inserted here by JavaScript -->
+        <!-- Manage Bookings -->
+        <section class="manage-bookings">
+            <h2 class="section-title">Manage Bookings</h2>
+            <p class="section-subtitle">View and make changes to active bookings</p>
+            <div class="room-cards" id="userBookings">
+                <!-- Dynamic content -->
+            </div>
+            <div class="booking-details">
+                <div class="booking-detail">
+                    <h4>Next Booking</h4>
+                    <p id="nextBooking">Loading...</p>
+                </div>
+            </div>
+        </section>
     </div>
-    
-    <!--
-    <div class="booking-details">
-      <div class="booking-detail">
-        <h4>Next Booking</h4>
-        <p id="nextBooking">Loading...</p>
-      </div>
-    </div>
-  </section>
--->
- 
 
     <!-- Footer -->
     <footer class="footer">
         <div class="footer-content">
-            <p>© 2025 Classroom Allocation Portal. All Rights Reserved</p>
+            <p>© 2025 Classroom Allocation Portal. All Rights Reserved</p><br><p>Group 5</p>
         </div>
     </footer>
 
-    <script src="cu.js"></script>
     <script src="user-display.js"></script>
-    <script src="booking-system.js"></script>
+    <script src="cu.js"></script>
+    <script src="multi-user-system.js"></script>
+<script src="booking-display-enhancement.js"></script>
+    <script>
+        // Initialize bookings properly
+        if (!localStorage.getItem('bookings')) {
+            localStorage.setItem('bookings', JSON.stringify({
+                upcoming: [],
+                current: [],
+                past: []
+            }));
+        }
+        
+        // Display user's bookings
+        function displayUserBookings() {
+            const auth = JSON.parse(localStorage.getItem('auth')) || {};
+            const bookings = JSON.parse(localStorage.getItem('bookings')) || { 
+                upcoming: [], 
+                current: [],
+                past: []
+            };
+            
+            // Filter bookings for current user
+            const userBookings = [...bookings.upcoming, ...bookings.current]
+                .filter(booking => booking.bookedBy === auth.username)
+                .sort((a, b) => new Date(`${a.date}T${a.startTime}`) - new Date(`${b.date}T${b.startTime}`));
+            
+            const container = document.getElementById('userBookings');
+            const nextBookingEl = document.getElementById('nextBooking');
+            
+            container.innerHTML = '';
+            
+            if (userBookings.length === 0) {
+                container.innerHTML = '<p class="no-bookings">No active bookings found</p>';
+                nextBookingEl.textContent = 'No upcoming bookings';
+                return;
+            }
+            
+            // Display next booking
+            nextBookingEl.textContent = 
+                `${userBookings[0].roomId} - ${userBookings[0].date} (${userBookings[0].startTime} to ${userBookings[0].endTime})`;
+            
+            // Create booking cards
+            userBookings.forEach(booking => {
+                const card = document.createElement('div');
+                card.className = 'room-card';
+                card.innerHTML = `
+                    <div class="room-icon">🏫</div>
+                    <h3>${booking.roomId}</h3>
+                    <p>Date: ${booking.date}</p>
+                    <p>Time: ${booking.startTime} - ${booking.endTime}</p>
+                    <p>Purpose: ${booking.purpose || 'Not specified'}</p>
+                    <button class="btn btn-cancel" data-timestamp="${booking.timestamp}">
+                        Cancel Booking
+                    </button>
+                `;
+                container.appendChild(card);
+            });
+        
+            // Add event listeners to all cancel buttons
+            document.querySelectorAll('.btn-cancel').forEach(button => {
+                button.addEventListener('click', () => {
+                    cancelBooking(parseInt(button.dataset.timestamp));
+                });
+            });
+        }
+        
+        // Cancel booking function
+        function cancelBooking(timestamp) {
+            if (!confirm('Are you sure you want to cancel this booking?')) return;
+            
+            const bookings = JSON.parse(localStorage.getItem('bookings'));
+            bookings.upcoming = bookings.upcoming.filter(b => b.timestamp !== timestamp);
+            bookings.current = bookings.current.filter(b => b.timestamp !== timestamp);
+            localStorage.setItem('bookings', JSON.stringify(bookings));
+            
+            displayUserBookings();
+            window.dispatchEvent(new StorageEvent('storage', { key: 'bookings' }));
+        }
+        
+        // Auto-update every minute
+        function checkBookingStatus() {
+            const now = new Date();
+            const bookings = JSON.parse(localStorage.getItem('bookings'));
+            let needsUpdate = false;
+            
+            // Check upcoming -> current
+            bookings.upcoming = bookings.upcoming.filter(booking => {
+                const start = new Date(`${booking.date}T${booking.startTime}`);
+                if (now >= start) {
+                    booking.status = 'current';
+                    bookings.current.push(booking);
+                    needsUpdate = true;
+                    return false;
+                }
+                return true;
+            });
+            
+            // Check current -> past
+            bookings.current = bookings.current.filter(booking => {
+                const end = new Date(`${booking.date}T${booking.endTime}`);
+                if (now >= end) {
+                    booking.status = 'past';
+                    bookings.past.push(booking);
+                    needsUpdate = true;
+                    return false;
+                }
+                return true;
+            });
+            
+            if (needsUpdate) {
+                localStorage.setItem('bookings', JSON.stringify(bookings));
+                displayUserBookings();
+                // If you have a displayRooms() function elsewhere, call it here too
+                if (typeof displayRooms === 'function') displayRooms();
+            }
+        }
+        
+        // Initialize
+        document.addEventListener('DOMContentLoaded', () => {
+            displayUserBookings();
+            // Run immediately, then every minute
+            checkBookingStatus();
+            setInterval(checkBookingStatus, 60000);
+        });
+        
+        // Sync across tabs
+        window.addEventListener('storage', (e) => {
+            if (e.key === 'bookings') displayUserBookings();
+        });
+        </script>
 </body>
 </html>
