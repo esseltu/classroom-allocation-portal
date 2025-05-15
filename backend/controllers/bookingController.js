@@ -49,7 +49,7 @@ const getBookings = (req, res) => {
         `;
         const rows = db.prepare(query).all();
 
-        console.log('[BOOKING] Bookings Retrieved:', rows); // Log the retrieved bookings
+        console.log('[BOOKING] Bookings Retrieved:', rows.length); // Log the retrieved bookings
         res.status(200).json(rows);
     } catch (err) {
         console.error('[BOOKING] Error Fetching Bookings:', err.message); // Log error
