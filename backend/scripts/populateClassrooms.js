@@ -1,19 +1,5 @@
 const db = require('../config/sqlite');
 
-// db.prepare('DROP TABLE IF EXISTS Classroom').run();
-// Create the Classroom table if it doesn't exist
-const createClassroomTableQuery = `
-    CREATE TABLE IF NOT EXISTS Classroom (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        name TEXT NOT NULL UNIQUE,
-        block INTEGER NOT NULL,
-        capacity INTEGER NOT NULL,
-        available BOOLEAN NOT NULL DEFAULT 1,
-        FOREIGN KEY (block) REFERENCES Block (id) ON DELETE CASCADE
-    )
-`;
-db.prepare(createClassroomTableQuery).run(); // Use db.prepare().run() for executing the query
-
 const classrooms = [
     { id: "1", name: "B01", block: 1, capacity: 60 },
     { id: "2", name: "C01", block: 2, capacity: 30 },
@@ -61,4 +47,3 @@ try {
 } catch (err) {
     console.error('Error populating classrooms:', err.message);
 }
-console.log('Classroom table is ready.');

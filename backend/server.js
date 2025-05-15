@@ -1,14 +1,26 @@
 // filepath: /Users/kevinafenyo/Documents/GitHub/classroom-allocation-portal/backend/server.js
 const express = require('express');
+const cors = require('cors'); // Import cors
 const classroomRoutes = require('./routes/classroom');
+const userRoutes = require('./routes/user');
+const bookingRoutes = require('./routes/booking');
+const blockRoutes = require('./routes/block'); // Import block routes
 require('./models'); // Import models to initialize them
 
 const app = express();
 const PORT = process.env.PORT || 5001;
 
+// Enable CORS
+app.use(cors({
+    origin: '*', // Allow requests from the frontend
+    methods: ['GET', 'POST', 'PUT', 'DELETE'], // Allowed HTTP methods
+    credentials: true // Allow cookies if needed
+}));
+
 app.use(express.json());
 
-app.use('/api', classroomRoutes);
+// Add routes
+app.use('/api', classroomRoutes, userRoutes, bookingRoutes, blockRoutes); // Add block routes here
 
 // Global error handler
 process.on('uncaughtException', (err) => {

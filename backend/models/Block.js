@@ -1,5 +1,6 @@
 const db = require('../config/sqlite');
 
+db.prepare('DROP TABLE IF EXISTS Block').run();
 // Create the Block table if it doesn't exist
 const createBlockTableQuery = `
     CREATE TABLE IF NOT EXISTS Block (
@@ -11,7 +12,7 @@ db.prepare(createBlockTableQuery).run(); // Use db.prepare().run() for executing
 console.log('Block table is ready.');
 
 // Insert block details into the Block table
-const blocks = ['Block A', 'Block B', 'Block C', 'Block E', 'Block F'];
+const blocks = ['Block B', 'Block C', 'Block E', 'Block F'];
 const insertBlockQuery = `INSERT OR IGNORE INTO Block (name) VALUES (?)`;
 
 const insertBlockStmt = db.prepare(insertBlockQuery); // Prepare the statement once
