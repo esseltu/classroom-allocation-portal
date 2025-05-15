@@ -82,16 +82,52 @@
     <script src="user-display.js"></script>
     <script src="cu.js"></script>
     <script src="multi-user-system.js"></script>
-<script src="booking-display-enhancement.js"></script>
+    <!-- <script src="booking-display-enhancement.js"></script> -->
     <script>
-        // Initialize bookings properly
-        if (!localStorage.getItem('bookings')) {
-            localStorage.setItem('bookings', JSON.stringify({
-                upcoming: [],
-                current: [],
-                past: []
-            }));
+        // Fetch bookings from the API
+        async function initializeBookings() {
+            try {
+                const response = await fetch('http://localhost:5001/api/booking');
+                if (!response.ok) throw new Error('Failed to fetch bookings');
+                const allBookings = await response.json();
+                console.log('Fetched bookings:', allBookings);
+
+                const now = new Date();
+                const categorized = {
+                    upcoming: [],
+                    current: [],
+                    past: []
+                };
+
+                allBookings.forEach(booking => {
+                    const start = new Date(`${booking.date}T${booking.startTime}`);
+                    const end = new Date(`${booking.date}T${booking.endTime}`);
+
+                    if (now < start) {
+                        categorized.upcoming.push({ ...booking, status: 'upcoming' });
+                    } else if (now >= start && now < end) {
+                        categorized.current.push({ ...booking, status: 'current' });
+                    } else {
+                        categorized.past.push({ ...booking, status: 'past' });
+                    }
+                });
+
+                localStorage.setItem('bookings', JSON.stringify(categorized));
+            } catch (error) {
+                console.error('Error initializing bookings:', error);
+                localStorage.setItem('bookings', JSON.stringify({
+                    upcoming: [],
+                    current: [],
+                    past: []
+                }));
+            }
         }
+
+        // Run initialization inside an async IIFE
+        (async () => {
+            await initializeBookings();
+            displayUserBookings();
+        })();
         
         // Display user's bookings
         function displayUserBookings() {
@@ -120,7 +156,7 @@
             
             // Display next booking
             nextBookingEl.textContent = 
-                `${userBookings[0].roomId} - ${userBookings[0].date} (${userBookings[0].startTime} to ${userBookings[0].endTime})`;
+                `${userBookings[0].name} - ${userBookings[0].date} (${userBookings[0].startTime} to ${userBookings[0].endTime})`;
             
             // Create booking cards
             userBookings.forEach(booking => {
@@ -128,11 +164,11 @@
                 card.className = 'room-card';
                 card.innerHTML = `
                     <div class="room-icon">🏫</div>
-                    <h3>${booking.roomId}</h3>
+                    <h3>${booking.name}</h3>
                     <p>Date: ${booking.date}</p>
                     <p>Time: ${booking.startTime} - ${booking.endTime}</p>
                     <p>Purpose: ${booking.purpose || 'Not specified'}</p>
-                    <button class="btn btn-cancel" data-timestamp="${booking.timestamp}">
+                    <button class="btn btn-cancel" data-booking-id="${booking.bookingId}">
                         Cancel Booking
                     </button>
                 `;
@@ -142,19 +178,31 @@
             // Add event listeners to all cancel buttons
             document.querySelectorAll('.btn-cancel').forEach(button => {
                 button.addEventListener('click', () => {
-                    cancelBooking(parseInt(button.dataset.timestamp));
+                    cancelBooking(parseInt(button.dataset.bookingId));
                 });
             });
         }
         
         // Cancel booking function
-        function cancelBooking(timestamp) {
+        function cancelBooking(bookingId) {
             if (!confirm('Are you sure you want to cancel this booking?')) return;
             
             const bookings = JSON.parse(localStorage.getItem('bookings'));
-            bookings.upcoming = bookings.upcoming.filter(b => b.timestamp !== timestamp);
-            bookings.current = bookings.current.filter(b => b.timestamp !== timestamp);
+            bookings.upcoming = bookings.upcoming.filter(b => b.bookingId !== bookingId);
+            bookings.current = bookings.current.filter(b => b.bookingId !== bookingId);
             localStorage.setItem('bookings', JSON.stringify(bookings));
+            
+            // Also send DELETE request to backend to remove booking
+            fetch(`http://localhost:5001/api/booking/${bookingId}`, {
+                method: 'DELETE',
+            })
+            .then(response => {
+                if (!response.ok) throw new Error('Failed to delete booking from server');
+                console.log('Booking deleted from database');
+            })
+            .catch(error => {
+                console.error('Error deleting booking from database:', error);
+            });
             
             displayUserBookings();
             window.dispatchEvent(new StorageEvent('storage', { key: 'bookings' }));
@@ -200,7 +248,6 @@
         
         // Initialize
         document.addEventListener('DOMContentLoaded', () => {
-            displayUserBookings();
             // Run immediately, then every minute
             checkBookingStatus();
             setInterval(checkBookingStatus, 60000);
