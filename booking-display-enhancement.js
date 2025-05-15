@@ -4,307 +4,185 @@
  */
 
 document.addEventListener("DOMContentLoaded", () => {
-  // Only run on pages with room display
-  if (!document.getElementById("roomGrid") && !window.location.href.includes("booking.html")) return
+  console.log('Booking display enhancement script loaded'); // Log when the script is loaded
 
-  // Wait for the page to fully initialize
+  if (!document.getElementById("roomGrid") && !window.location.href.includes("booking.html")) {
+    console.warn('Room grid not found or not on booking page'); // Log if not on the booking page
+    return;
+  }
+
   setTimeout(() => {
-    enhanceBookingDisplay()
-  }, 100)
-})
+    console.log('Loading blocks and classrooms...');
+    loadBlocks();
+    enhanceBookingDisplay();
+  }, 100);
+});
 
-/**
- * Enhance the booking display to show user information
- */
-function enhanceBookingDisplay() {
-  // Define all rooms data
-  window.allRooms = [
-    { id: "E101", block: "Block E", capacity: 30 },
-    { id: "E102", block: "Block E", capacity: 30 },
-    { id: "E103", block: "Block E", capacity: 30 },
-    { id: "E104", block: "Block E", capacity: 30 },
-    { id: "E201", block: "Block E", capacity: 40 },
-    { id: "E202", block: "Block E", capacity: 40 },
-    { id: "E203", block: "Block E", capacity: 40 },
-    { id: "E204", block: "Block E", capacity: 40 },
-    { id: "E301", block: "Block E", capacity: 50 },
-    { id: "E302", block: "Block E", capacity: 50 },
-    { id: "E303", block: "Block E", capacity: 50 },
-    { id: "E304", block: "Block E", capacity: 50 },
-    { id: "F102", block: "Block F", capacity: 35 },
-    { id: "F103", block: "Block F", capacity: 35 },
-    { id: "F104", block: "Block F", capacity: 35 },
-    { id: "F201", block: "Block F", capacity: 45 },
-    { id: "F202", block: "Block F", capacity: 45 },
-    { id: "F301", block: "Block F", capacity: 55 },
-    { id: "F302", block: "Block F", capacity: 55 },
-    { id: "F303", block: "Block F", capacity: 55 },
-    { id: "F304", block: "Block F", capacity: 55 },
-    { id: "F403", block: "Block F", capacity: 60 },
-    { id: "F404", block: "Block F", capacity: 60 },
-  ]
+// Fetch and populate blocks in the dropdown
+async function loadBlocks() {
+  console.log('Fetching blocks from backend...'); // Log block fetch
+  try {
+    const blockFilter = document.getElementById("blockFilter");
+    if (!blockFilter) {
+      console.warn('Block filter dropdown not found'); // Log if dropdown is missing
+      return;
+    }
 
-  // Define our enhanced version of displayRooms
-  window.displayRooms = () => {
-    const roomGrid = document.getElementById("roomGrid")
-    if (!roomGrid) return
+    const response = await fetch('http://localhost:5001/api/block');
+    const blocks = await response.json();
+    console.log('Blocks fetched:', blocks); // Log the fetched blocks
 
-    roomGrid.innerHTML = ""
-    const bookings = JSON.parse(localStorage.getItem("sharedBookings") || '{"past":[],"current":[],"upcoming":[]}')
-    const now = new Date()
-
-    // Create map of booked rooms
-    const bookedRooms = {}
-    ;[...bookings.upcoming, ...bookings.current].forEach((booking) => {
-      const endTime = new Date(`${booking.date}T${booking.endTime}`)
-      if (now < endTime) {
-        bookedRooms[booking.roomId] = {
-          endTime: booking.endTime,
-          bookedBy: booking.bookedBy,
-          bookedByFullName: booking.bookedByFullName || booking.bookedBy,
-          bookedByDepartment: booking.bookedByDepartment || "",
-          timestamp: booking.timestamp,
-        }
-      }
-    })
-
-    // Get current user
-    const auth = JSON.parse(localStorage.getItem("auth") || "{}")
-
-    // Render each room
-    window.allRooms.forEach((room) => {
-      const isBooked = bookedRooms[room.id]
-      const isMyBooking = isBooked && bookedRooms[room.id].bookedBy === auth.username
-
-      const roomCard = document.createElement("div")
-      roomCard.className = "room-card"
-      roomCard.innerHTML = `
-                <div class="room-icon">🏫</div>
-                <h3>${room.id}</h3>
-                <p>${room.block} • Capacity: ${room.capacity}</p>
-                <span class="room-status ${isBooked ? "booked" : "available"}">
-                    ${isBooked ? `Booked until ${bookedRooms[room.id].endTime}` : "Available"}
-                </span>
-                ${
-                  isBooked
-                    ? `
-                    <div class="booked-by-info">
-                        Booked by: ${bookedRooms[room.id].bookedByFullName}
-                        ${bookedRooms[room.id].bookedByDepartment ? `(${bookedRooms[room.id].bookedByDepartment})` : ""}
-                    </div>
-                `
-                    : ""
-                }
-                <button class="btn ${isBooked ? (isMyBooking ? "btn-cancel" : "btn-disabled") : "btn-book"}" 
-                        ${isBooked && !isMyBooking ? "disabled" : ""}
-                        data-room="${room.id}"
-                        data-booking-id="${isBooked ? bookedRooms[room.id].timestamp : ""}">
-                    ${isBooked ? (isMyBooking ? "Cancel Booking" : "Booked") : "Book Now"}
-                </button>
-            `
-
-      // Add event listeners
-      const button = roomCard.querySelector("button")
-      if (isBooked && isMyBooking) {
-        button.addEventListener("click", () => {
-          window.cancelBooking(button.dataset.bookingId, room.id)
-        })
-      } else if (!isBooked) {
-        button.addEventListener("click", () => {
-          window.openBookingModal(room.id)
-        })
-      }
-
-      roomGrid.appendChild(roomCard)
-    })
+    blocks.forEach((block) => {
+      const option = document.createElement("option");
+      option.value = block.name;
+      option.textContent = block.name;
+      blockFilter.appendChild(option);
+    });
+  } catch (error) {
+    console.error("Error fetching blocks:", error); // Log any errors
   }
-
-  // Define booking modal functions
-  window.openBookingModal = (roomId) => {
-    const bookingModal = document.querySelector(".booking-modal")
-    if (!bookingModal) return
-
-    const modalRoomId = document.getElementById("modal-room-id")
-    if (modalRoomId) modalRoomId.textContent = roomId
-
-    const today = new Date().toISOString().split("T")[0]
-    const bookingDate = document.getElementById("booking-date")
-    if (bookingDate) {
-      bookingDate.value = today
-      bookingDate.min = today
-    }
-
-    // Set default times (current hour to next hour)
-    const now = new Date()
-    const startTime = document.getElementById("start-time")
-    const endTime = document.getElementById("end-time")
-
-    if (startTime) {
-      startTime.value = `${now.getHours().toString().padStart(2, "0")}:${now.getMinutes().toString().padStart(2, "0")}`
-    }
-
-    if (endTime) {
-      endTime.value = `${(now.getHours() + 1).toString().padStart(2, "0")}:${now.getMinutes().toString().padStart(2, "0")}`
-    }
-
-    bookingModal.classList.add("active")
-  }
-
-  // Define cancel booking function
-  window.cancelBooking = (bookingId, roomId) => {
-    if (!confirm(`Cancel booking for ${roomId}?`)) return
-
-    const bookings = JSON.parse(localStorage.getItem("sharedBookings") || '{"past":[],"current":[],"upcoming":[]}')
-
-    bookings.upcoming = bookings.upcoming.filter((b) => b.timestamp !== Number.parseInt(bookingId))
-    bookings.current = bookings.current.filter((b) => b.timestamp !== Number.parseInt(bookingId))
-
-    localStorage.setItem("sharedBookings", JSON.stringify(bookings))
-    localStorage.setItem("bookings", JSON.stringify(bookings))
-
-    // Trigger sync
-    window.dispatchEvent(new StorageEvent("storage", { key: "bookings" }))
-
-    if (typeof window.displayRooms === "function") {
-      window.displayRooms()
-    }
-  }
-
-  // Enhance the booking form submission
-  const bookingForm = document.getElementById("booking-form")
-  if (bookingForm) {
-    bookingForm.addEventListener("submit", (e) => {
-      e.preventDefault()
-
-      const auth = JSON.parse(localStorage.getItem("auth") || "{}")
-      const userDetails = JSON.parse(localStorage.getItem("userDetails") || "{}")
-
-      const roomId = document.getElementById("modal-room-id").textContent
-      const date = document.getElementById("booking-date").value
-      const startTime = document.getElementById("start-time").value
-      const endTime = document.getElementById("end-time").value
-      const purpose = document.getElementById("purpose").value
-
-      if (startTime >= endTime) {
-        alert("End time must be after start time")
-        return
-      }
-
-      // Create booking with enhanced user information
-      const booking = {
-        roomId,
-        date,
-        startTime,
-        endTime,
-        purpose,
-        bookedBy: auth.username,
-        bookedByFullName: userDetails.fullName || auth.username,
-        bookedByDepartment: userDetails.department || "",
-        timestamp: Date.now(),
-        status: "upcoming",
-      }
-
-      const bookings = JSON.parse(localStorage.getItem("sharedBookings") || '{"past":[],"current":[],"upcoming":[]}')
-      bookings.upcoming.push(booking)
-
-      // Update both shared and local bookings
-      localStorage.setItem("sharedBookings", JSON.stringify(bookings))
-      localStorage.setItem("bookings", JSON.stringify(bookings))
-
-      // Close modal
-      document.querySelector(".booking-modal").classList.remove("active")
-
-      // Trigger sync
-      window.dispatchEvent(new StorageEvent("storage", { key: "bookings" }))
-
-      // If there's a displayRooms function, call it
-      if (typeof window.displayRooms === "function") {
-        window.displayRooms()
-      }
-
-      alert(`Successfully booked ${roomId} from ${startTime}-${endTime} on ${date}`)
-    })
-
-    // Close modal handlers
-    const closeModalBtn = document.querySelector(".close-modal")
-    if (closeModalBtn) {
-      closeModalBtn.addEventListener("click", () => {
-        document.querySelector(".booking-modal").classList.remove("active")
-      })
-    }
-
-    const bookingModal = document.querySelector(".booking-modal")
-    if (bookingModal) {
-      bookingModal.addEventListener("click", (e) => {
-        if (e.target === bookingModal) {
-          bookingModal.classList.remove("active")
-        }
-      })
-    }
-  }
-
-  // Add search functionality
-  const searchBtn = document.getElementById("searchBtn")
-  if (searchBtn) {
-    searchBtn.addEventListener("click", () => {
-      const searchTerm = document.getElementById("roomSearch").value.toLowerCase()
-      const blockFilter = document.getElementById("blockFilter").value
-
-      document.querySelectorAll(".room-card").forEach((card) => {
-        const roomId = card.querySelector("h3").textContent.toLowerCase()
-        const block = card.querySelector("p").textContent
-        const matchesSearch = roomId.includes(searchTerm)
-        const matchesBlock = blockFilter === "" || block.includes(blockFilter)
-
-        card.style.display = matchesSearch && matchesBlock ? "block" : "none"
-      })
-    })
-  }
-
-  // Call displayRooms if it exists
-  if (typeof window.displayRooms === "function") {
-    window.displayRooms()
-  }
-
-  // Set up auto-update every minute
-  setInterval(() => {
-    const now = new Date()
-    const bookings = JSON.parse(localStorage.getItem("bookings") || '{"past":[],"current":[],"upcoming":[]}')
-    let needsUpdate = false
-
-    // Check upcoming -> current
-    bookings.upcoming = bookings.upcoming.filter((booking) => {
-      const start = new Date(`${booking.date}T${booking.startTime}`)
-      if (now >= start) {
-        booking.status = "current"
-        bookings.current.push(booking)
-        needsUpdate = true
-        return false
-      }
-      return true
-    })
-
-    // Check current -> past
-    bookings.current = bookings.current.filter((booking) => {
-      const end = new Date(`${booking.date}T${booking.endTime}`)
-      if (now >= end) {
-        booking.status = "past"
-        bookings.past.push(booking)
-        needsUpdate = true
-        return false
-      }
-      return true
-    })
-
-    if (needsUpdate) {
-      localStorage.setItem("bookings", JSON.stringify(bookings))
-      localStorage.setItem("sharedBookings", JSON.stringify(bookings))
-      if (typeof window.displayRooms === "function") {
-        window.displayRooms()
-      }
-    }
-  }, 60000)
 }
 
-// Make the function globally available
-window.enhanceBookingDisplay = enhanceBookingDisplay
+// Fetch and display classrooms
+async function enhanceBookingDisplay() {
+  console.log('Fetching classrooms and bookings from backend...'); // Log classroom and booking fetch
+  try {
+    const roomGrid = document.getElementById("roomGrid");
+    if (!roomGrid) {
+      console.warn('Room grid not found'); // Log if room grid is missing
+      return;
+    }
+
+    roomGrid.innerHTML = "<div class='loading-message'>Loading classrooms...</div>";
+
+    // Fetch classrooms and bookings from the API
+    const [classroomsResponse, bookingsResponse] = await Promise.all([
+      fetch('http://localhost:5001/api/classroom'),
+      fetch('http://localhost:5001/api/booking'),
+    ]);
+
+    const classrooms = await classroomsResponse.json();
+    const bookings = await bookingsResponse.json();
+    console.log('Classrooms fetched:', classrooms); // Log the fetched classrooms
+    console.log('Bookings fetched:', bookings); // Log the fetched bookings
+
+    const now = new Date();
+
+    // Map bookings by classroom ID
+    const bookedRooms = {};
+    bookings.forEach((booking) => {
+      const endTime = new Date(`${booking.date}T${booking.endTime}`);
+      if (now < endTime) {
+        bookedRooms[booking.classroomId] = {
+          endTime: booking.endTime,
+          bookedBy: booking.fullName,
+          purpose: booking.purpose,
+        };
+      }
+    });
+
+    // Render classrooms
+    roomGrid.innerHTML = '';
+    classrooms.forEach((room) => {
+      const isBooked = bookedRooms[room.id];
+      const roomCard = document.createElement('div');
+      roomCard.className = 'room-card';
+      roomCard.innerHTML = `
+        <div class="room-icon">🏫</div>
+        <h3>${room.name}</h3>
+        <p>${room.block} • Capacity: ${room.capacity}</p>
+        <span class="room-status ${isBooked ? 'booked' : 'available'}">
+          ${isBooked ? `Booked until ${isBooked.endTime}` : 'Available'}
+        </span>
+        ${
+          isBooked
+            ? `<div class="booked-by-info">Booked by: ${isBooked.bookedBy}</div>`
+            : ''
+        }
+        <button class="btn ${isBooked ? 'btn-disabled' : 'btn-book'}" 
+                ${isBooked ? 'disabled' : ''} 
+                data-room="${room.name}">
+          ${isBooked ? 'Booked' : 'Book Now'}
+        </button>
+      `;
+
+      // Add event listener for booking
+      const button = roomCard.querySelector('button');
+      if (!isBooked) {
+        button.addEventListener('click', () => openBookingModal(room.name, room.id));
+      }
+
+      roomGrid.appendChild(roomCard);
+    });
+  } catch (error) {
+    console.error('Error fetching data:', error); // Log any errors
+    document.getElementById('roomGrid').innerHTML = '<div class="error">Failed to load data. Please try again later.</div>';
+  }
+}
+
+async function openBookingModal(roomName, roomId) {
+  const bookingModal = document.querySelector('.booking-modal');
+  const modalRoomId = document.getElementById('modal-room-id');
+  modalRoomId.textContent = roomName;
+
+  const roomID = roomId;
+  const today = new Date().toISOString().split('T')[0];
+  document.getElementById('booking-date').value = today;
+  document.getElementById('booking-date').min = today;
+
+  bookingModal.classList.add('active');
+
+  const bookingForm = document.getElementById('booking-form');
+  bookingForm.onsubmit = async (e) => {
+    e.preventDefault();
+
+    const date = document.getElementById('booking-date').value;
+    const startTime = document.getElementById('start-time').value;
+    const endTime = document.getElementById('end-time').value;
+    const purpose = document.getElementById('purpose').value;
+
+    try {
+      const auth = JSON.parse(localStorage.getItem('auth'));
+      const userId = auth.userId;
+      console.log(userId);
+
+      // Proceed with booking
+      const response = await fetch('http://localhost:5001/api/booking', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          classroomId: roomID,
+          date,
+          startTime,
+          endTime,
+          purpose,
+          userId: auth.userId,
+        }),
+      });
+
+      if (response.ok) {
+        // Update the availability of the classroom
+        const updateResponse = await fetch(`http://localhost:5001/api/classroom/${roomID}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ available: '0' }),
+        });
+
+        if (updateResponse.ok) {
+          alert('Booking successful and classroom marked as unavailable!');
+          bookingModal.classList.remove('active');
+          enhanceBookingDisplay();
+        } else {
+          const updateError = await updateResponse.json();
+          alert(`Error updating classroom availability: ${updateError.message}`);
+        }
+      } else {
+        const error = await response.json();
+        alert(`Error: ${error.message}`);
+      }
+    } catch (error) {
+      console.error('Error creating booking:', error);
+      alert('Failed to create booking. Please try again.');
+    }
+  };
+}
