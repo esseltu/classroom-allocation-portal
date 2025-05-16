@@ -140,7 +140,7 @@
             
             // Filter bookings for current user
             const userBookings = [...bookings.upcoming, ...bookings.current]
-                .filter(booking => booking.bookedBy === auth.username)
+                .filter(booking => booking.fullname === auth.username)
                 .sort((a, b) => new Date(`${a.date}T${a.startTime}`) - new Date(`${b.date}T${b.startTime}`));
             
             const container = document.getElementById('userBookings');
