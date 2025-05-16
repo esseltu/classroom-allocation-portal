@@ -185,4 +185,11 @@ async function openBookingModal(roomName, roomId) {
       alert('Failed to create booking. Please try again.');
     }
   };
+
+  const closeModalButton = bookingModal.querySelector('.close-modal');
+  if (closeModalButton) {
+    closeModalButton.addEventListener('click', () => {
+      bookingModal.classList.remove('active');
+    });
+  }
 }
