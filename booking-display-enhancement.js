@@ -28,7 +28,7 @@ async function loadBlocks() {
       return;
     }
 
-    const response = await fetch('http://localhost:5001/api/block');
+    const response = await fetch('https://classroom-allocation-portal.onrender.com/api/block');
     const blocks = await response.json();
     console.log('Blocks fetched:', blocks); // Log the fetched blocks
 
@@ -57,8 +57,8 @@ async function enhanceBookingDisplay() {
 
     // Fetch classrooms and bookings from the API
     const [classroomsResponse, bookingsResponse] = await Promise.all([
-      fetch('http://localhost:5001/api/classroom'),
-      fetch('http://localhost:5001/api/booking'),
+      fetch('https://classroom-allocation-portal.onrender.com/api/classroom'),
+      fetch('https://classroom-allocation-portal.onrender.com/api/booking'),
     ]);
 
     const classrooms = await classroomsResponse.json();
@@ -147,7 +147,7 @@ async function openBookingModal(roomName, roomId) {
       console.log(userId);
 
       // Proceed with booking
-      const response = await fetch('http://localhost:5001/api/booking', {
+      const response = await fetch('https://classroom-allocation-portal.onrender.com/api/booking', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -162,7 +162,7 @@ async function openBookingModal(roomName, roomId) {
 
       if (response.ok) {
         // Update the availability of the classroom
-        const updateResponse = await fetch(`http://localhost:5001/api/classroom/${roomID}`, {
+        const updateResponse = await fetch(`https://classroom-allocation-portal.onrender.com/api/classroom/${roomID}`, {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ available: '0' }),

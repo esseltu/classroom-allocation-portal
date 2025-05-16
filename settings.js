@@ -12,7 +12,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   try {
     console.log('Fetching user details from backend...');
-    const response = await fetch(`http://localhost:5001/api/user/${auth.userId}`);
+    const response = await fetch(`https://classroom-allocation-portal.onrender.com/api/user/${auth.userId}`);
     const userDetails = await response.json();
     console.log('User details fetched:', userDetails); // Log the fetched user details
 
@@ -35,7 +35,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     };
 
     try {
-      const response = await fetch(`http://localhost:5001/api/user/${auth.userId}`, {
+      const response = await fetch(`https://classroom-allocation-portal.onrender.com/api/user/${auth.userId}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(updatedDetails),
@@ -66,7 +66,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     try {
-      fetch(`http://localhost:5001/api/user/${auth.userId}/password`, {
+      fetch(`https://classroom-allocation-portal.onrender.com/api/user/${auth.userId}/password`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ currentPassword, newPassword }),

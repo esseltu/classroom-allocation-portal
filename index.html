@@ -87,7 +87,7 @@
         // Fetch bookings from the API
         async function initializeBookings() {
             try {
-                const response = await fetch('http://localhost:5001/api/booking');
+                const response = await fetch('https://classroom-allocation-portal.onrender.com/api/booking');
                 if (!response.ok) throw new Error('Failed to fetch bookings');
                 const allBookings = await response.json();
                 console.log('Fetched bookings:', allBookings);
@@ -193,7 +193,7 @@
             localStorage.setItem('bookings', JSON.stringify(bookings));
             
             // Also send DELETE request to backend to remove booking
-            fetch(`http://localhost:5001/api/booking/${bookingId}`, {
+            fetch(`https://classroom-allocation-portal.onrender.com/api/booking/${bookingId}`, {
                 method: 'DELETE',
             })
             .then(response => {

@@ -35,7 +35,7 @@ document.addEventListener('DOMContentLoaded', function () {
         try {
             // Send login request to the backend
             console.log('Sending login request to the backend...');
-            const response = await fetch('http://localhost:5001/api/login', { // Replace with backend URL
+            const response = await fetch('https://classroom-allocation-portal.onrender.com/api/login', { // Replace with backend URL
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ email: username, password }),
