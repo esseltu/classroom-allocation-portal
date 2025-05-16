@@ -68,6 +68,24 @@ async function enhanceBookingDisplay() {
 
     const now = new Date();
 
+    // Add search and filter functionality after classrooms are rendered
+    const searchBtn = document.getElementById('searchBtn');
+    if (searchBtn) {
+      searchBtn.addEventListener('click', function() {
+      const searchTerm = document.getElementById('roomSearch').value.toLowerCase();
+      const blockFilterValue = document.getElementById('blockFilter').value;
+
+      document.querySelectorAll('.room-card').forEach(card => {
+        const roomName = card.querySelector('h3').textContent.toLowerCase();
+        const blockText = card.querySelector('p').textContent;
+        const matchesSearch = roomName.includes(searchTerm);
+        const matchesBlock = blockFilterValue === '' || blockText.includes(blockFilterValue);
+
+        card.style.display = (matchesSearch && matchesBlock) ? 'block' : 'none';
+      });
+      });
+    }
+      
     // Map bookings by classroom ID
     const bookedRooms = {};
     bookings.forEach((booking) => {
@@ -76,6 +94,7 @@ async function enhanceBookingDisplay() {
         bookedRooms[booking.classroomId] = {
           endTime: booking.endTime,
           bookedBy: booking.fullName,
+          bookedByID: booking.userId,
           purpose: booking.purpose,
         };
       }
@@ -85,6 +104,10 @@ async function enhanceBookingDisplay() {
     roomGrid.innerHTML = '';
     classrooms.forEach((room) => {
       const isBooked = bookedRooms[room.id];
+      
+      const auth = JSON.parse(localStorage.getItem('auth')) || {};
+      const isUserBooked = isBooked && isBooked.bookedByID === auth.userId;
+      
       const roomCard = document.createElement('div');
       roomCard.className = 'room-card';
       roomCard.innerHTML = `
@@ -96,7 +119,9 @@ async function enhanceBookingDisplay() {
         </span>
         ${
           isBooked
-            ? `<div class="booked-by-info">Booked by: ${isBooked.bookedBy}</div>`
+            ? isUserBooked
+              ? `<div class="booked-by-info">Booked by: You</div>`
+              : `<div class="booked-by-info">Booked by: ${isBooked.bookedBy}</div>`
             : ''
         }
         <button class="btn ${isBooked ? 'btn-disabled' : 'btn-book'}" 

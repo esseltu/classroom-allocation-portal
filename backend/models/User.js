@@ -28,7 +28,7 @@ async function populateUsers() {
     const email = 'admin@example.com';
     const password = 'password123'; // Default password
     const role = 'Admin';
-    const department = 'IT';
+    const department = 'Information Technology';
     const level = 0;
 
     // Hash the password

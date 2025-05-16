@@ -140,7 +140,7 @@
             
             // Filter bookings for current user
             const userBookings = [...bookings.upcoming, ...bookings.current]
-                .filter(booking => booking.fullname === auth.username)
+                .filter(booking => booking.userId === auth.userId)
                 .sort((a, b) => new Date(`${a.date}T${a.startTime}`) - new Date(`${b.date}T${b.startTime}`));
             
             const container = document.getElementById('userBookings');
@@ -168,7 +168,7 @@
                     <p>Date: ${booking.date}</p>
                     <p>Time: ${booking.startTime} - ${booking.endTime}</p>
                     <p>Purpose: ${booking.purpose || 'Not specified'}</p>
-                    <button class="btn btn-cancel" data-booking-id="${booking.bookingId}">
+                    <button class="btn btn-cancel" data-booking-id="${booking.bookingId}" data-classroom-id="${booking.classroomId}">
                         Cancel Booking
                     </button>
                 `;
@@ -178,13 +178,13 @@
             // Add event listeners to all cancel buttons
             document.querySelectorAll('.btn-cancel').forEach(button => {
                 button.addEventListener('click', () => {
-                    cancelBooking(parseInt(button.dataset.bookingId));
+                    cancelBooking(parseInt(button.dataset.bookingId), parseInt(button.dataset.classroomId));
                 });
             });
         }
         
         // Cancel booking function
-        function cancelBooking(bookingId) {
+        function cancelBooking(bookingId, classroomId) {
             if (!confirm('Are you sure you want to cancel this booking?')) return;
             
             const bookings = JSON.parse(localStorage.getItem('bookings'));
@@ -202,6 +202,22 @@
             })
             .catch(error => {
                 console.error('Error deleting booking from database:', error);
+            });
+
+            // Update the class availability to available
+            fetch(`https://classroom-allocation-portal.onrender.com/api/classroom/${classroomId}`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ available: 1 })
+            })
+            .then(response => {
+                if (!response.ok) throw new Error('Failed to update classroom availability');
+                console.log('Classroom availability updated');
+            })
+            .catch(error => {
+                console.error('Error updating classroom availability:', error);
             });
             
             displayUserBookings();
@@ -233,10 +249,20 @@
                     booking.status = 'past';
                     bookings.past.push(booking);
                     needsUpdate = true;
+
+                    // Update classroom availability
+                    fetch(`https://classroom-allocation-portal.onrender.com/api/classroom/${booking.classroomId}`, {
+                        method: 'PUT',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({ available: 1 })
+                    })
                     return false;
                 }
                 return true;
             });
+
             
             if (needsUpdate) {
                 localStorage.setItem('bookings', JSON.stringify(bookings));
