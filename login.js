@@ -48,6 +48,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 console.log('Login successful:', data); // Log the successful response
 
                 // Save user data to localStorage
+                console.log(data);
                 localStorage.setItem('auth', JSON.stringify({ isLoggedIn: true, userId: data.id }));
                 localStorage.setItem('userDetails', JSON.stringify(data));
 

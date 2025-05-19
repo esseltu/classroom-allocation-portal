@@ -43,7 +43,7 @@ const loginUser = (req, res) => {
         }
 
         console.log('[USER] Login Successful:', { id: user.id, username: user.username, role: user.role }); // Log success
-        res.status(200).json({ id: user.id, username: user.username, fullName: user.fullName, role: user.role });
+        res.status(200).json({ id: user.id, username: user.username, fullName: user.fullName, role: user.role, department: user.department });
     } catch (err) {
         console.error('[USER] Error Logging in User:', err.message, err.stack); // Log error
         res.status(500).json({ error: err.message });
