@@ -18,6 +18,49 @@ document.addEventListener("DOMContentLoaded", () => {
   }, 100);
 });
 
+// Cancel booking function
+  function cancelBooking(bookingId, classroomId) {
+      console.log('Canceling booking:', bookingId);
+      
+      if (!confirm('Are you sure you want to cancel this booking?')) return;
+      
+      const bookings = JSON.parse(localStorage.getItem('bookings'));
+      bookings.upcoming = bookings.upcoming.filter(b => b.bookingId !== bookingId);
+      bookings.current = bookings.current.filter(b => b.bookingId !== bookingId);
+      localStorage.setItem('bookings', JSON.stringify(bookings));
+      
+      // Also send DELETE request to backend to remove booking
+      fetch(`https://classroom-allocation-portal.onrender.com/api/booking/${bookingId}`, {
+          method: 'DELETE',
+      })
+      .then(response => {
+          if (!response.ok) throw new Error('Failed to delete booking from server');
+          console.log('Booking deleted from database');
+      })
+      .catch(error => {
+          console.error('Error deleting booking from database:', error);
+      });
+
+      // Update the class availability to available
+      fetch(`https://classroom-allocation-portal.onrender.com/api/classroom/${classroomId}`, {
+          method: 'PUT',
+          headers: {
+              'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ available: 1 })
+      })
+      .then(response => {
+          if (!response.ok) throw new Error('Failed to update classroom availability');
+          console.log('Classroom availability updated');
+          // loadBlocks();
+          // enhanceBookingDisplay();
+          window.location.reload();
+      })
+      .catch(error => {
+          console.error('Error updating classroom availability:', error);
+      });
+  }
+
 // Fetch and populate blocks in the dropdown
 async function loadBlocks() {
   console.log('Fetching blocks from backend...'); // Log block fetch
@@ -96,6 +139,7 @@ async function enhanceBookingDisplay() {
           bookedBy: booking.fullName,
           bookedByID: booking.userId,
           purpose: booking.purpose,
+          bookingId: booking.bookingId,
         };
       }
     });
@@ -124,10 +168,18 @@ async function enhanceBookingDisplay() {
               : `<div class="booked-by-info">Booked by: ${isBooked.bookedBy}</div>`
             : ''
         }
-        <button class="btn ${isBooked ? 'btn-disabled' : 'btn-book'}" 
-                ${isBooked ? 'disabled' : ''} 
+        <button class="btn ${isBooked ? 
+                              isUserBooked ?
+                                'btn-cancel'
+                                : 'btn-disabled'
+                              : 'btn-book'}" data-booking-id=${bookedRooms[room.id]?.bookingId || ''} data-classroom-id=${room.id} 
+                ${isBooked && !isUserBooked ? 'disabled' : ''} 
                 data-room="${room.name}">
-          ${isBooked ? 'Booked' : 'Book Now'}
+          ${isBooked ? 
+              isUserBooked
+                ? 'Cancel Booking' 
+                : 'Booked'
+              : 'Book Now'}
         </button>
       `;
 
@@ -135,6 +187,16 @@ async function enhanceBookingDisplay() {
       const button = roomCard.querySelector('button');
       if (!isBooked) {
         button.addEventListener('click', () => openBookingModal(room.name, room.id));
+      }
+      if (isUserBooked) {
+        const cancelButton = roomCard.querySelector('.btn-cancel');
+        if (cancelButton) {
+          cancelButton.addEventListener('click', () => {
+            console.log('Booking Id:', parseInt(cancelButton.dataset.bookingId));
+            console.log('Classroom Id:', cancelButton.dataset.classroomId);
+            cancelBooking(parseInt(cancelButton.dataset.bookingId), parseInt(cancelButton.dataset.classroomId));
+          });
+        }
       }
 
       roomGrid.appendChild(roomCard);

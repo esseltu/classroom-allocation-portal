@@ -98,10 +98,6 @@ function addUserSwitcherToHeader() {
     userSwitcherModal.classList.remove("active")
   })
 
-  userSwitcherModal.querySelector(".btn-close-modal").addEventListener("click", () => {
-    userSwitcherModal.classList.remove("active")
-  })
-
   userSwitcherModal.querySelector(".btn-logout").addEventListener("click", () => {
     // Clear current session
     localStorage.removeItem("auth")
