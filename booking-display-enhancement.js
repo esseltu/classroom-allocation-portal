@@ -18,48 +18,49 @@ document.addEventListener("DOMContentLoaded", () => {
   }, 100);
 });
 
-// Cancel booking function
-  function cancelBooking(bookingId, classroomId) {
-      console.log('Canceling booking:', bookingId);
-      
-      if (!confirm('Are you sure you want to cancel this booking?')) return;
-      
-      const bookings = JSON.parse(localStorage.getItem('bookings'));
-      bookings.upcoming = bookings.upcoming.filter(b => b.bookingId !== bookingId);
-      bookings.current = bookings.current.filter(b => b.bookingId !== bookingId);
-      localStorage.setItem('bookings', JSON.stringify(bookings));
-      
-      // Also send DELETE request to backend to remove booking
-      fetch(`https://classroom-allocation-portal.onrender.com/api/booking/${bookingId}`, {
-          method: 'DELETE',
-      })
-      .then(response => {
-          if (!response.ok) throw new Error('Failed to delete booking from server');
-          console.log('Booking deleted from database');
-      })
-      .catch(error => {
-          console.error('Error deleting booking from database:', error);
-      });
+// Declare bookedRooms at the top so it's accessible everywhere
+let bookedRooms = {};
 
-      // Update the class availability to available
-      fetch(`https://classroom-allocation-portal.onrender.com/api/classroom/${classroomId}`, {
-          method: 'PUT',
-          headers: {
-              'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({ available: 1 })
-      })
-      .then(response => {
-          if (!response.ok) throw new Error('Failed to update classroom availability');
-          console.log('Classroom availability updated');
-          // loadBlocks();
-          // enhanceBookingDisplay();
-          window.location.reload();
-      })
-      .catch(error => {
-          console.error('Error updating classroom availability:', error);
-      });
-  }
+// Cancel booking function
+function cancelBooking(bookingId, classroomId) {
+  console.log('Canceling booking:', bookingId);
+  
+  if (!confirm('Are you sure you want to cancel this booking?')) return;
+  
+  const bookings = JSON.parse(localStorage.getItem('bookings'));
+  bookings.upcoming = bookings.upcoming.filter(b => b.bookingId !== bookingId);
+  bookings.current = bookings.current.filter(b => b.bookingId !== bookingId);
+  localStorage.setItem('bookings', JSON.stringify(bookings));
+  
+  // Also send DELETE request to backend to remove booking
+  fetch(`https://classroom-allocation-portal.onrender.com/api/booking/${bookingId}`, {
+      method: 'DELETE',
+  })
+  .then(response => {
+      if (!response.ok) throw new Error('Failed to delete booking from server');
+      console.log('Booking deleted from database');
+  })
+  .catch(error => {
+      console.error('Error deleting booking from database:', error);
+  });
+
+  // Update the class availability to available
+  fetch(`https://classroom-allocation-portal.onrender.com/api/classroom/${classroomId}`, {
+      method: 'PUT',
+      headers: {
+          'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ available: 1 })
+  })
+  .then(response => {
+      if (!response.ok) throw new Error('Failed to update classroom availability');
+      console.log('Classroom availability updated');
+      window.location.reload();
+  })
+  .catch(error => {
+      console.error('Error updating classroom availability:', error);
+  });
+}
 
 // Fetch and populate blocks in the dropdown
 async function loadBlocks() {
@@ -115,71 +116,83 @@ async function enhanceBookingDisplay() {
     const searchBtn = document.getElementById('searchBtn');
     if (searchBtn) {
       searchBtn.addEventListener('click', function() {
-      const searchTerm = document.getElementById('roomSearch').value.toLowerCase();
-      const blockFilterValue = document.getElementById('blockFilter').value;
+        const searchTerm = document.getElementById('roomSearch').value.toLowerCase();
+        const blockFilterValue = document.getElementById('blockFilter').value;
 
-      document.querySelectorAll('.room-card').forEach(card => {
-        const roomName = card.querySelector('h3').textContent.toLowerCase();
-        const blockText = card.querySelector('p').textContent;
-        const matchesSearch = roomName.includes(searchTerm);
-        const matchesBlock = blockFilterValue === '' || blockText.includes(blockFilterValue);
+        document.querySelectorAll('.room-card').forEach(card => {
+          const roomName = card.querySelector('h3').textContent.toLowerCase();
+          const blockText = card.querySelector('p').textContent;
+          const matchesSearch = roomName.includes(searchTerm);
+          const matchesBlock = blockFilterValue === '' || blockText.includes(blockFilterValue);
 
-        card.style.display = (matchesSearch && matchesBlock) ? 'block' : 'none';
-      });
+          card.style.display = (matchesSearch && matchesBlock) ? 'block' : 'none';
+        });
       });
     }
       
     // Map bookings by classroom ID
-    const bookedRooms = {};
+    bookedRooms = {}; // <-- Remove 'const', just assign to the global variable
     bookings.forEach((booking) => {
       const endTime = new Date(`${booking.date}T${booking.endTime}`);
       if (now < endTime) {
-        bookedRooms[booking.classroomId] = {
+        if (!bookedRooms[booking.classroomId]) bookedRooms[booking.classroomId] = [];
+        bookedRooms[booking.classroomId].push({
+          startTime: booking.startTime,
           endTime: booking.endTime,
           bookedBy: booking.fullName,
           bookedByID: booking.userId,
           purpose: booking.purpose,
           bookingId: booking.bookingId,
-        };
+          date: booking.date,
+        });
       }
     });
 
     // Render classrooms
     roomGrid.innerHTML = '';
     classrooms.forEach((room) => {
-      const isBooked = bookedRooms[room.id];
-      
+      const bookingsForRoom = bookedRooms[room.id] || [];
+      const isBooked = bookingsForRoom.length > 0;
       const auth = JSON.parse(localStorage.getItem('auth')) || {};
-      const isUserBooked = isBooked && isBooked.bookedByID === auth.userId;
-      
+      const isUserBooked = bookingsForRoom.some(b => b.bookedByID === auth.userId);
+
       const roomCard = document.createElement('div');
       roomCard.className = 'room-card';
       roomCard.innerHTML = `
         <div class="room-icon">🏫</div>
         <h3>${room.name}</h3>
         <p>${room.block} • Capacity: ${room.capacity}</p>
-        <span class="room-status ${isBooked ? 'booked' : 'available'}">
-          ${isBooked ? `Booked until ${isBooked.endTime}` : 'Available'}
-        </span>
+        <div class="room-status-list">
+          ${
+            isBooked
+              ? bookingsForRoom.map(b => `
+                  <span class="room-status booked">
+                    Booked: ${b.startTime} - ${b.endTime} by ${b.bookedBy}
+                  </span>
+                `).join('')
+              : `<span class="room-status available">Available</span>`
+          }
+        </div>
         ${
-          isBooked
-            ? isUserBooked
-              ? `<div class="booked-by-info">Booked by: You</div>`
-              : `<div class="booked-by-info">Booked by: ${isBooked.bookedBy}</div>`
+          isUserBooked
+            ? `<div class="booked-by-info">Booked by: You</div>`
             : ''
         }
-        <button class="btn ${isBooked ? 
-                              isUserBooked ?
-                                'btn-cancel'
-                                : 'btn-disabled'
-                              : 'btn-book'}" data-booking-id=${bookedRooms[room.id]?.bookingId || ''} data-classroom-id=${room.id} 
-                ${isBooked && !isUserBooked ? 'disabled' : ''} 
-                data-room="${room.name}">
-          ${isBooked ? 
-              isUserBooked
-                ? 'Cancel Booking' 
+        <button class="btn ${
+          isBooked && !isUserBooked ? 'btn-disabled' :
+          isUserBooked ? 'btn-cancel' : 'btn-book'
+        }"
+          data-booking-id="${(bookingsForRoom.find(b => b.bookedByID === auth.userId) || {}).bookingId || ''}"
+          data-classroom-id="${room.id}"
+          ${isBooked && !isUserBooked ? 'disabled' : ''}
+          data-room="${room.name}">
+          ${
+            isBooked
+              ? isUserBooked
+                ? 'Cancel Booking'
                 : 'Booked'
-              : 'Book Now'}
+              : 'Book Now'
+          }
         </button>
       `;
 
@@ -227,6 +240,23 @@ async function openBookingModal(roomName, roomId) {
     const startTime = document.getElementById('start-time').value;
     const endTime = document.getElementById('end-time').value;
     const purpose = document.getElementById('purpose').value;
+
+    // Get all bookings for this room and date
+    const bookingsForRoom = (bookedRooms[roomID] || []).filter(b => {
+      // Only check for the same date
+      return b.date === date;
+    });
+
+    // Check for time overlap
+    const overlap = bookingsForRoom.some(b => {
+      // If newStart < existingEnd && newEnd > existingStart, there is overlap
+      return (startTime < b.endTime && endTime > b.startTime);
+    });
+
+    if (overlap) {
+      alert('This room is already booked for part or all of the selected time period. Please choose a different time.');
+      return;
+    }
 
     try {
       const auth = JSON.parse(localStorage.getItem('auth'));
