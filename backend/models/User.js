@@ -23,27 +23,33 @@ db.exec(`
 
 async function populateUsers() {
   try {
-    const username = 'admin';
-    const fullName = 'Admin User';
-    const email = 'admin@example.com';
-    const password = 'password123'; // Default password
-    const role = 'Admin';
-    const department = 'Information Technology';
-    const level = 0;
+    const users = [
+        { username: 'admin', fullName: 'Admin User', email: 'admin@central.edu.gh', password: 'password123', role: 'Admin', department: 'Computer Science', level: 0 },
+        { username: 'michael', fullName: 'Michael Joseph', email: 'michaeljoseph@central.edu.gh', password: 'password123', role: 'Course Rep', department: 'Computer Science', level: 100 },
+        { username: 'albertina', fullName: 'Albertina Agboli', email: 'albertina@central.edu.gh', password: 'password123', role: 'Course Rep', department: 'Computer Science', level: 200 },
+        { username: 'essel', fullName: 'Essel Turkson', email: 'esselturkson@central.edu.gh', password: 'password123', role: 'Course Rep', department: 'Computer Science', level: 300 },
+        { username: 'michelle', fullName: 'Michelle Arhin', email: 'michellearhin@central.edu.gh', password: 'password123', role: 'Course Rep', department: 'Computer Science', level: 400 },
+        { username: 'elaine', fullName: 'Elaine Annan', email: 'elaineannan@central.edu.gh', password: 'password123', role: 'Course Rep', department: 'Information Technology', level: 100 },
+        { username: 'ellis', fullName: 'Ellis Gbewordo', email: 'ellisgbewordo@central.edu.gh', password: 'password123', role: 'Course Rep', department: 'Information Technology', level: 200 },
+        { username: 'selasi', fullName: 'Selasi Ahiaku', email: 'selasiahiaku@central.edu.gh', password: 'password123', role: 'Course Rep', department: 'Information Technology', level: 300 },
+        { username: 'theophilus', fullName: 'Theophilus Martey', email: 'theophilusmartey@central.edu.gh', password: 'password123', role: 'Course Rep', department: 'Information Technology', level: 400 },
+        { username: 'kevin', fullName: 'Kevin Afenyo', email: 'kevinafenyo@central.edu.gh', password: 'password123', role: 'Coures Rep', department: 'Business', level: 100 },
+        { username: 'joy', fullName: 'Joy Nkor', email: 'joynkor@central.edu.gh', password: 'password123', role: 'Coures Rep', department: 'Business', level: 200 },
+    ]
 
-    // Hash the password
-    const hashedPassword = await bcrypt.hash(password, 10);
+    const insertUser = db.prepare(`
+        INSERT INTO User (username, fullName, email, password, role, department, level)
+        VALUES (?, ?, ?, ?, ?, ?, ?)
+    `);
 
-    // Insert the user into the database
-    const query = `
-      INSERT INTO User (username, fullName, email, password, role, department, level)
-      VALUES (?, ?, ?, ?, ?, ?, ?)
-    `;
-    db.prepare(query).run(username, fullName, email, hashedPassword, role, department, level);
+    for (const user of users) {
+        const hashedPassword = await bcrypt.hash(user.password, 10);
+        insertUser.run(user.username, user.fullName, user.email, hashedPassword, user.role, user.department, user.level);
+    }
+    
+    insertUser.finalize();
+    console.log('All users populated successfully.');
 
-    console.log('Default user created successfully:');
-    console.log(`Username: ${username}`);
-    console.log(`Password: ${password}`);
   } catch (error) {
     console.error('Error populating users:', error.message);
   }
