@@ -179,18 +179,14 @@ async function enhanceBookingDisplay() {
             : ''
         }
         <button class="btn ${
-          isBooked && !isUserBooked ? 'btn-disabled' :
           isUserBooked ? 'btn-cancel' : 'btn-book'
         }"
           data-booking-id="${(bookingsForRoom.find(b => b.bookedByID === auth.userId) || {}).bookingId || ''}"
           data-classroom-id="${room.id}"
-          ${isBooked && !isUserBooked ? 'disabled' : ''}
           data-room="${room.name}">
           ${
-            isBooked
-              ? isUserBooked
-                ? 'Cancel Booking'
-                : 'Booked'
+            isUserBooked
+              ? 'Cancel Booking'
               : 'Book Now'
           }
         </button>
@@ -198,18 +194,17 @@ async function enhanceBookingDisplay() {
 
       // Add event listener for booking
       const button = roomCard.querySelector('button');
-      if (!isBooked) {
-        button.addEventListener('click', () => openBookingModal(room.name, room.id));
-      }
       if (isUserBooked) {
+        // Cancel logic as before
         const cancelButton = roomCard.querySelector('.btn-cancel');
         if (cancelButton) {
           cancelButton.addEventListener('click', () => {
-            console.log('Booking Id:', parseInt(cancelButton.dataset.bookingId));
-            console.log('Classroom Id:', cancelButton.dataset.classroomId);
             cancelBooking(parseInt(cancelButton.dataset.bookingId), parseInt(cancelButton.dataset.classroomId));
           });
         }
+      } else {
+        // Always allow booking (modal will prevent overlaps)
+        button.addEventListener('click', () => openBookingModal(room.name, room.id));
       }
 
       roomGrid.appendChild(roomCard);
