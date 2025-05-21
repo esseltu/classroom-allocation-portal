@@ -40,7 +40,7 @@ const classrooms = [
     { id: "23", name: "F303", block: 4, capacity: 55 },
     { id: "24", name: "F304", block: 4, capacity: 55 },
     { id: "25", name: "F403", block: 4, capacity: 60 },
-    { id: "26", name: "F404", block: 4, capacity: 60 },
+    { id: "26", name: "F404", block: 4, capacity: 60 }
 ];
 
 try {
