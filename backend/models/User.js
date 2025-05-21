@@ -2,6 +2,7 @@ const db = require('../config/sqlite');
 const bcrypt = require('bcrypt');
 
 // Create the User table if it doesn't exist
+db.exec('DROP TABLE IF EXISTS USER');
 db.exec(`
     CREATE TABLE IF NOT EXISTS User (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -47,8 +48,7 @@ async function populateUsers() {
         insertUser.run(user.username, user.fullName, user.email, hashedPassword, user.role, user.department, user.level);
     }
     
-    insertUser.finalize();
-    console.log('All users populated successfully.');
+    console.log('All users created successfully.');
 
   } catch (error) {
     console.error('Error populating users:', error.message);
