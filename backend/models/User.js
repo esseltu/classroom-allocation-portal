@@ -56,27 +56,3 @@ async function populateUsers() {
 }
 
 populateUsers();
-
-// Function to add a user
-const addUser = (username, fullName, email, password, role, department, level, callback) => {
-    const query = `
-        INSERT INTO User (username, fullName, email, password, role, department, level)
-        VALUES (?, ?, ?, ?, ?, ?, ?)
-    `;
-    db.run(query, [username, fullName, email, password, role, department, level], function (err) {
-        callback(err, this.lastID);
-    });
-};
-
-// Function to fetch a user by email
-const getUserByEmail = (email, callback) => {
-    const query = `SELECT * FROM User WHERE email = ?`;
-    db.get(query, [email], (err, row) => {
-        callback(err, row);
-    });
-};
-
-module.exports = {
-    addUser,
-    getUserByEmail
-};

@@ -13,7 +13,7 @@ const addClassroom = (req, res) => {
 
         if (!blockResult) {
             console.warn('[CLASSROOM] Block Not Found:', block); // Log if block is not found
-            return res.status(400).json({ error: `Block '${block}' does not exist.` });
+            return res.status(400).json({ error: `Block of ID:'${block}' does not exist.` });
         }
 
         const query = `INSERT INTO Classroom (name, block, capacity) VALUES (?, ?, ?)`;

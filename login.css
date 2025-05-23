@@ -68,7 +68,7 @@ body {
     justify-content: center;
     align-items: center;
     min-height: calc(100vh - 160px);
-    padding: 2rem 0;
+    padding: 1rem 0;
 }
 
 .login-card {
@@ -123,11 +123,14 @@ body {
 }
 
 .form-group input {
-    padding: 0.9rem 1rem;
-    border: 1px solid #ddd;
+    padding: 1rem 1rem;
+    border: 1px solid #FAF6F6;
+    border-bottom: 1.5px solid #ddd;
     border-radius: 0.5rem;
     font-size: 1rem;
+    width: 350px;
     transition: all 0.3s ease;
+    box-shadow: #222;
 }
 
 .form-group input:focus {
@@ -185,7 +188,7 @@ body {
 /* Buttons */
 .btn {
     display: inline-block;
-    padding: 0.75rem 1.75rem;
+    padding: 1rem 2rem;
     background-color: #fff;
     color: #c62828;
     text-decoration: none;
@@ -205,16 +208,19 @@ body {
 }
 
 .btn-login {
-    width: 100%;
+    width: 50%;
     background: linear-gradient(to right, #c62828, #e53935);
     color: white;
     border: none;
-    padding: 1rem;
+    padding: 0.8rem;
     font-size: 1rem;
     font-weight: 600;
-    margin-top: 0.5rem;
+    margin-top: 1.5rem; 
+    margin-left: auto;  /* center */
+    margin-right: auto; /* center */
     box-shadow: 0 4px 15px rgba(198, 40, 40, 0.3);
     border-radius: 0.5rem;
+    display: block;
 }
 
 .btn-login:hover {
@@ -249,6 +255,7 @@ body {
     display: flex;
     align-items: center;
     margin: 1.5rem 0;
+    margin-top: 0.5rem;
     color: #999;
     font-size: 0.9rem;
 }
