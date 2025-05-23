@@ -25,7 +25,7 @@ db.exec(`
 async function populateUsers() {
   try {
     const users = [
-        { username: 'admin', fullName: 'Admin User', email: 'admin@central.edu.gh', password: 'password123', role: 'Admin', department: 'Computer Science', level: 0 },
+        { username: 'joy', fullName: 'Joy Chris-Odai', email: 'joychrisodai@central.edu.gh', password: 'password123', role: 'Coures Rep', department: 'Business', level: 200 },
         { username: 'michael', fullName: 'Michael Joseph', email: 'michaeljoseph@central.edu.gh', password: 'password123', role: 'Course Rep', department: 'Computer Science', level: 100 },
         { username: 'albertina', fullName: 'Albertina Agboli', email: 'albertinaagboli@central.edu.gh', password: 'password123', role: 'Course Rep', department: 'Computer Science', level: 200 },
         { username: 'essel', fullName: 'Essel Turkson', email: 'esselturkson@central.edu.gh', password: 'password123', role: 'Course Rep', department: 'Computer Science', level: 300 },
@@ -35,7 +35,7 @@ async function populateUsers() {
         { username: 'selasi', fullName: 'Selasi Ahiaku', email: 'selasiahiaku@central.edu.gh', password: 'password123', role: 'Course Rep', department: 'Information Technology', level: 300 },
         { username: 'theophilus', fullName: 'Theophilus Martey', email: 'theophilusmartey@central.edu.gh', password: 'password123', role: 'Course Rep', department: 'Information Technology', level: 400 },
         { username: 'kevin', fullName: 'Kevin Afenyo', email: 'kevinafenyo@central.edu.gh', password: 'password123', role: 'Coures Rep', department: 'Business', level: 100 },
-        { username: 'joy', fullName: 'Joy Chris-Odai', email: 'joychrisodai@central.edu.gh', password: 'password123', role: 'Coures Rep', department: 'Business', level: 200 },
+        { username: 'admin', fullName: 'Admin User', email: 'admin@central.edu.gh', password: 'password123', role: 'Admin', department: 'Computer Science', level: 0 },
     ]
 
     const insertUser = db.prepare(`
