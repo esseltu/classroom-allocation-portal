@@ -143,6 +143,8 @@ async function enhanceBookingDisplay() {
           bookedByID: booking.userId,
           purpose: booking.purpose,
           bookingId: booking.bookingId,
+          bookedDepartment: booking.department,
+          userLevel: booking.level,
           date: booking.date,
         });
       }
@@ -167,7 +169,7 @@ async function enhanceBookingDisplay() {
             isBooked
               ? bookingsForRoom.map(b => `
                   <span class="room-status booked">
-                    Booked: ${b.startTime} - ${b.endTime} by ${b.bookedBy}
+                    Booked: ${b.startTime} - ${b.endTime} by ${b.bookedDepartment} ${b.userLevel}
                   </span>
                 `).join('')
               : `<span class="room-status available">Available</span>`
@@ -281,7 +283,7 @@ async function openBookingModal(roomName, roomId) {
         });
 
         if (updateResponse.ok) {
-          alert('Booking successful and classroom marked as unavailable!');
+          alert('Booking successful');
           bookingModal.classList.remove('active');
           enhanceBookingDisplay();
         } else {

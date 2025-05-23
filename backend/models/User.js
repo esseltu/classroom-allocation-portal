@@ -27,7 +27,7 @@ async function populateUsers() {
     const users = [
         { username: 'admin', fullName: 'Admin User', email: 'admin@central.edu.gh', password: 'password123', role: 'Admin', department: 'Computer Science', level: 0 },
         { username: 'michael', fullName: 'Michael Joseph', email: 'michaeljoseph@central.edu.gh', password: 'password123', role: 'Course Rep', department: 'Computer Science', level: 100 },
-        { username: 'albertina', fullName: 'Albertina Agboli', email: 'albertina@central.edu.gh', password: 'password123', role: 'Course Rep', department: 'Computer Science', level: 200 },
+        { username: 'albertina', fullName: 'Albertina Agboli', email: 'albertinaagboli@central.edu.gh', password: 'password123', role: 'Course Rep', department: 'Computer Science', level: 200 },
         { username: 'essel', fullName: 'Essel Turkson', email: 'esselturkson@central.edu.gh', password: 'password123', role: 'Course Rep', department: 'Computer Science', level: 300 },
         { username: 'michelle', fullName: 'Michelle Arhin', email: 'michellearhin@central.edu.gh', password: 'password123', role: 'Course Rep', department: 'Computer Science', level: 400 },
         { username: 'elaine', fullName: 'Elaine Annan', email: 'elaineannan@central.edu.gh', password: 'password123', role: 'Course Rep', department: 'Information Technology', level: 100 },
