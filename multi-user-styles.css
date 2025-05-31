@@ -113,7 +113,10 @@
 
 .user-info {
   flex: 1;
-  margin-left: 12px;
+  margin-left: 5px;
+  margin-right: 5px;
+  margin-top: 10px;
+  margin-bottom: 10px;
 }
 
 .user-name {
@@ -146,7 +149,7 @@
 
 .user-switcher-footer {
   display: flex;
-  justify-content: space-between;
+  justify-content: end;
   padding: 16px;
   border-top: 1px solid #eee;
 }

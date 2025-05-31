@@ -20,26 +20,7 @@ document.addEventListener("DOMContentLoaded", () => {
  * Sets up the shared booking storage and migrates existing data
  */
 function initMultiUserSystem() {
-  // Create shared bookings storage if it doesn't exist
-  if (!localStorage.getItem("sharedBookings")) {
-    // Migrate existing bookings to shared storage
-    const existingBookings = JSON.parse(localStorage.getItem("bookings") || '{"past":[],"current":[],"upcoming":[]}')
-    localStorage.setItem("sharedBookings", JSON.stringify(existingBookings))
-  } else {
-    // Ensure bookings is synced with sharedBookings
-    localStorage.setItem("bookings", localStorage.getItem("sharedBookings"))
-  }
-
-  // Create users registry if it doesn't exist
-  if (!localStorage.getItem("registeredUsers")) {
-    localStorage.setItem("registeredUsers", JSON.stringify([]))
-  }
-
-  // Store the current user's username to prevent unintended switching
-  const auth = JSON.parse(localStorage.getItem("auth") || "{}")
-  if (auth.isLoggedIn && auth.username) {
-    sessionStorage.setItem("currentUser", auth.username)
-  }
+  // Initialization logic removed as per instructions
 }
 
 /**
@@ -53,23 +34,19 @@ function addUserSwitcherToHeader() {
   const auth = JSON.parse(localStorage.getItem("auth") || "{}")
   const userDetails = JSON.parse(localStorage.getItem("userDetails") || "{}")
 
-  // Get registered users
-  const registeredUsers = JSON.parse(localStorage.getItem("registeredUsers") || "[]")
-
-  // Add current user to registered users if not already there
+  // Fetch current user details from the API route if available
   if (auth.isLoggedIn && auth.username) {
-    const existingUser = registeredUsers.find((u) => u.username === auth.username)
-    if (!existingUser) {
-      registeredUsers.push({
-        username: auth.username,
-        fullName: userDetails.fullName || auth.username,
-        role: userDetails.role || "User",
-        department: userDetails.department || "",
-        level: userDetails.level || "",
-        timestamp: Date.now(),
+    // Try to fetch user details from the backend route
+    fetch('https://classroom-allocation-portal.onrender.com/api/user/current', {
+      credentials: 'include'
+    })
+      .then(res => res.ok ? res.json() : Promise.reject())
+      .then(apiUser => {
+        // No localStorage manipulation per instructions
       })
-      localStorage.setItem("registeredUsers", JSON.stringify(registeredUsers))
-    }
+      .catch(() => {
+        // Fallback logic removed as per instructions
+      })
   }
 
   // Create user switcher button
@@ -83,7 +60,9 @@ function addUserSwitcherToHeader() {
   // Add to header
   header.appendChild(userSwitcherBtn)
 
-  // Create user switcher modal
+  // Since registeredUsers from localStorage is removed, we can't list users
+  // So render modal with only current user info
+
   const userSwitcherModal = document.createElement("div")
   userSwitcherModal.className = "user-switcher-modal"
   userSwitcherModal.innerHTML = `
@@ -93,31 +72,17 @@ function addUserSwitcherToHeader() {
                 <button class="close-user-switcher">&times;</button>
             </div>
             <div class="user-list">
-                ${registeredUsers
-                  .map(
-                    (user) => `
-                    <div class="user-item ${auth.username === user.username ? "active-user" : ""}" data-username="${
-                      user.username
-                    }">
-                        <div class="user-avatar-small">👤</div>
-                        <div class="user-info">
-                            <div class="user-name">${user.fullName || user.username}</div>
-                            <div class="user-role">${user.role || "User"} ${
-                              user.department ? "• " + user.department : ""
-                            }</div>
-                        </div>
-                        <button class="btn btn-small ${auth.username === user.username ? "btn-disabled" : "btn-switch"}" 
-                                ${auth.username === user.username ? "disabled" : ""}>
-                            ${auth.username === user.username ? "Current" : "Switch"}
-                        </button>
+                <div class="user-item active-user" data-username="${auth.username}">
+                    <div class="user-avatar-small">👤</div>
+                    <div class="user-info">
+                        <div class="user-name">${userDetails.fullName || auth.username}</div>
+                        <div class="user-role">${userDetails.role || "User"} ${userDetails.department ? "• " + userDetails.department : ""}</div>
                     </div>
-                `,
-                  )
-                  .join("")}
+                    <button class="btn btn-small btn-disabled" disabled>Current</button>
+                </div>
             </div>
             <div class="user-switcher-footer">
                 <button class="btn btn-logout">Log Out</button>
-                <button class="btn btn-close-modal">Close</button>
             </div>
         </div>
     `
@@ -133,42 +98,16 @@ function addUserSwitcherToHeader() {
     userSwitcherModal.classList.remove("active")
   })
 
-  userSwitcherModal.querySelector(".btn-close-modal").addEventListener("click", () => {
-    userSwitcherModal.classList.remove("active")
-  })
-
   userSwitcherModal.querySelector(".btn-logout").addEventListener("click", () => {
-    // Save user data before logout
-    saveUserData(auth.username)
-
     // Clear current session
     localStorage.removeItem("auth")
     localStorage.removeItem("userDetails")
-    sessionStorage.removeItem("currentUser")
 
     // Redirect to login
     window.location.href = "Login.html"
   })
 
-  // Switch user functionality
-  userSwitcherModal.querySelectorAll(".btn-switch").forEach((btn) => {
-    btn.addEventListener("click", () => {
-      const userItem = btn.closest(".user-item")
-      const username = userItem.dataset.username
-
-      // Save current user data
-      saveUserData(auth.username)
-
-      // Load selected user data
-      loadUserData(username)
-
-      // Store the new current user
-      sessionStorage.setItem("currentUser", username)
-
-      // Reload page to apply changes
-      window.location.reload()
-    })
-  })
+  // Switch user buttons removed as no other users to switch to
 
   // Close when clicking outside
   userSwitcherModal.addEventListener("click", (e) => {
@@ -178,68 +117,13 @@ function addUserSwitcherToHeader() {
   })
 }
 
-/**
- * Save user data to localStorage
- * @param {string} username - Username to save data for
- */
-function saveUserData(username) {
-  if (!username) return
+// Removed saveUserData and loadUserData functions and their usage
 
-  const userKey = `user_${username}`
-  localStorage.setItem(
-    userKey,
-    JSON.stringify({
-      auth: JSON.parse(localStorage.getItem("auth") || "{}"),
-      userDetails: JSON.parse(localStorage.getItem("userDetails") || "{}"),
-    }),
-  )
-}
-
-/**
- * Load user data from localStorage
- * @param {string} username - Username to load data for
- */
-function loadUserData(username) {
-  if (!username) return
-
-  const userKey = `user_${username}`
-  const userData = JSON.parse(localStorage.getItem(userKey) || "{}")
-
-  if (userData.auth) {
-    localStorage.setItem("auth", JSON.stringify(userData.auth))
-  }
-
-  if (userData.userDetails) {
-    localStorage.setItem("userDetails", JSON.stringify(userData.userDetails))
-  }
-}
-
-/**
- * Check if we need to restore the previous user's session
- * This prevents unintended user switching on page refresh
- */
-function checkUserSession() {
-  // Only check if we're not on the login page
-  if (window.location.href.includes("Login.html")) return
-
-  const auth = JSON.parse(localStorage.getItem("auth") || "{}")
-  const currentUser = sessionStorage.getItem("currentUser")
-
-  // If there's a mismatch between the current auth and the stored user,
-  // and we have a stored user, restore that user's session
-  if (auth.isLoggedIn && currentUser && auth.username !== currentUser) {
-    console.log("Restoring session for user:", currentUser)
-    loadUserData(currentUser)
-    window.location.reload()
-  }
-}
+// Removed checkUserSession function and its call
 
 // Check if we're on the login page and enhance it
 if (window.location.href.includes("Login.html")) {
   document.addEventListener("DOMContentLoaded", enhanceLoginProcess)
-} else {
-  // Check user session to prevent unintended switching
-  checkUserSession()
 }
 
 /**
@@ -272,61 +156,8 @@ function enhanceLoginProcess() {
       return
     }
 
-    // Check if user exists
-    const userKey = `user_${username}`
-    const userData = JSON.parse(localStorage.getItem(userKey) || "{}")
-
-    // If user exists and password is correct (using 'password' for all users in this prototype)
+    // Only validate password (using 'password' for all users in this prototype)
     if (password === "password") {
-      // Get registered users
-      const registeredUsers = JSON.parse(localStorage.getItem("registeredUsers") || "[]")
-
-      // Create auth data
-      const loginData = {
-        isLoggedIn: true,
-        username: username,
-        timestamp: new Date().getTime(),
-      }
-
-      // Create or update user details
-      let userDetails
-
-      if (userData.userDetails) {
-        // Use existing user details
-        userDetails = userData.userDetails
-      } else {
-        // Create new user details
-        userDetails = {
-          fullName: username,
-          role: "Course Rep",
-          department: "Computer Science",
-          level: "300",
-        }
-      }
-
-      // Save to localStorage
-      localStorage.setItem("auth", JSON.stringify(loginData))
-      localStorage.setItem("userDetails", JSON.stringify(userDetails))
-
-      // Store the current user in sessionStorage to prevent unintended switching
-      sessionStorage.setItem("currentUser", username)
-
-      // Save user data
-      saveUserData(username)
-
-      // Add to registered users if not already there
-      if (!registeredUsers.find((u) => u.username === username)) {
-        registeredUsers.push({
-          username: username,
-          fullName: userDetails.fullName,
-          role: userDetails.role,
-          department: userDetails.department,
-          level: userDetails.level,
-          timestamp: Date.now(),
-        })
-        localStorage.setItem("registeredUsers", JSON.stringify(registeredUsers))
-      }
-
       // Simulate loading state
       const submitBtn = loginForm.querySelector('button[type="submit"]')
       submitBtn.textContent = "Signing in..."
@@ -340,7 +171,7 @@ function enhanceLoginProcess() {
       return
     }
 
-    // If we get here, either the user doesn't exist or the password is wrong
+    // If we get here, the password is wrong
     // Fall back to the original login handler if it exists
     if (typeof originalOnsubmit === "function") {
       return originalOnsubmit.call(this, e)
@@ -354,7 +185,3 @@ function enhanceLoginProcess() {
     }
   }
 }
-
-// Make these functions globally available
-window.saveUserData = saveUserData
-window.loadUserData = loadUserData

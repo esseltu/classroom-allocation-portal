@@ -1,3 +1,5 @@
+import { getEnhancedBookings } from './booking-display-enhancement.js';
+
 document.addEventListener('DOMContentLoaded', function() {
     if (!document.querySelector('.manage-bookings')) return;
     
@@ -15,19 +17,18 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 });
 
-function displayUserBookings() {
+async function displayUserBookings() {
     try {
         const auth = JSON.parse(localStorage.getItem('auth'));
         if (!auth?.username) return;
 
-        const bookings = JSON.parse(localStorage.getItem('bookings')) || {
-            past: [], current: [], upcoming: []
-        };
+        // Use the enhanced booking retrieval logic
+        const bookings = await getEnhancedBookings(auth.username);
 
         const now = new Date();
-        const userBookings = [...bookings.upcoming, ...bookings.current]
-            .filter(b => b.bookedBy === auth.username)
-            .sort((a, b) => new Date(`${a.date}T${a.startTime}`) - new Date(`${b.date}T${b.startTime}`));
+        const userBookings = bookings.sort((a, b) => 
+            new Date(`${a.date}T${a.startTime}`) - new Date(`${b.date}T${b.startTime}`)
+        );
 
         updateBookingDisplay(userBookings, now);
     } catch (error) {
